@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agenda AliClin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f7f8;color:#243238}
 header{background:#fff;padding:18px 24px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;gap:15px}
@@ -88,15 +89,18 @@ const professionals=[
 "Aline Hahn da Cunha — Enfermagem Dermatológica"
 ];
 const rooms=["Consultório 1","Consultório 2","Consultório 3"];
-let appointments=JSON.parse(localStorage.getItem("aliclin_agenda")||"[]");
+const supabaseClient = supabase.createClient(
+  "https://hxgkiebshwmtnwrdkmhb.supabase.co",
+  "sb_publishable_q6jVJbTlU1qS9xltrSoCpA_shgky4Cn"
+);
+  let appointments=[];
 let editingId=null;
-
 function pad(n){return String(n).padStart(2,"0")}
 function today(){let d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function dateObj(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
 function fmtDate(s){return dateObj(s).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})}
 function times(){let a=[];for(let h=8;h<=19;h++){a.push(pad(h)+":00"); if(h<19)a.push(pad(h)+":30")}return a}
-function save(){localStorage.setItem("aliclin_agenda",JSON.stringify(appointments))}
+async function save(){}
 function populate(){
  let p=document.getElementById("professional"), fp=document.getElementById("filterProfessional");
  p.innerHTML=professionals.map(x=>`<option>${x}</option>`).join("");
