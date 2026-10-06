@@ -391,34 +391,56 @@
     document.getElementById("modalBg").style.display = "none";
   }
 
-  function saveAppointment() {
-    const patient = document.getElementById("patient").value.trim();
-    const professional = document.getElementById("professional").value.trim();
-    const room = document.getElementById("room").value;
-    const date = document.getElementById("appointmentDate").value;
-    const start = document.getElementById("start").value;
-    const end = document.getElementById("end").value;
+  async function saveAppointment() {
+  const patient = document.getElementById("patient").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const professional = document.getElementById("professional").value.trim();
+  const room = document.getElementById("room").value;
+  const date = document.getElementById("appointmentDate").value;
+  const start = document.getElementById("start").value;
+  const end = document.getElementById("end").value;
+  const notes = document.getElementById("notes").value.trim();
 
-    if (!patient || !date || !start || !end) {
-      alert("Preencha paciente, data, horário inicial e horário final.");
-      return;
-    }
+  if (!patient || !date || !start || !end) {
+    alert("Preencha paciente, data, horário inicial e horário final.");
+    return;
+  }
 
-    appointments.push({
-      patient: patient,
-      phone: document.getElementById("phone").value.trim(),
-      professional: professional,
-      room: room,
-      date: date,
-      start: start,
-      end: end,
-      notes: document.getElementById("notes").value.trim()
-    });
+  const { data, error } = await supabaseClient
+    .from("agendamentos")
+    .insert([{
+      paciente: patient,
+      telefone: phone,
+      profissional: professional,
+      sala: room,
+      dados: date,
+      horario_inicial: start,
+      horario_final: end,
+      observacao: notes
+    }])
+    .select();
 
-    document.getElementById("datePicker").value = date;
+  if (error) {
+    alert("Erro ao salvar: " + error.message);
+    return;
+  }
 
-    closeModal();
-    render();
+  appointments.push({
+    patient: patient,
+    phone: phone,
+    professional: professional,
+    room: room,
+    date: date,
+    start: start,
+    end: end,
+    notes: notes
+  });
+
+  document.getElementById("datePicker").value = date;
+  closeModal();
+  render();
+  alert("Agendamento salvo com sucesso!");
+}
 
     alert("Agendamento salvo com sucesso!");
   }
