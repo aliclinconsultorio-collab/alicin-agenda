@@ -100,8 +100,26 @@ function today(){let d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)
 function dateObj(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
 function fmtDate(s){return dateObj(s).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})}
 function times(){let a=[];for(let h=8;h<=19;h++){a.push(pad(h)+":00"); if(h<19)a.push(pad(h)+":30")}return a}
-async function save(){}
-function populate(){
+async function save()
+{
+const patient = document.getElementById("patient").value.trim();
+const phone = document.getElementById("phone").value.trim();
+const professional = document.getElementById("professional").value;
+const room = document.getElementById("room").value;
+const date = document.getElementById("date").value;
+const start = document.getElementById("start").value;
+const end = document.getElementById("end").value;
+const status = document.getElementById("status").value;  
+const type = document.getElementById("type").value.trim();
+const notes = document.getElementById("notes").value.trim();
+if (!patient || !professional || !room || !date || !start || !end) { alert("Preencha os campos obrigatórios."); return; }
+const { data, error } = await supabaseClient.from("appointments").insert([{ patient, phone, professional, room, date, start, end, status, type, notes }]).select();
+if (error) { alert("Erro ao salvar: " + error.message); return; }  
+appointments.push(data[0]);  
+reder(): 
+alert("Agendamento salvo com sucesso!");  
+}
+  function populate(){
  let p=document.getElementById("professional"), fp=document.getElementById("filterProfessional");
  p.innerHTML=professionals.map(x=>`<option>${x}</option>`).join("");
  fp.innerHTML='<option value="">Todos os profissionais</option>'+professionals.map(x=>`<option>${x}</option>`).join("");
