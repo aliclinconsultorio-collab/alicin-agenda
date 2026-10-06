@@ -389,7 +389,7 @@
     const result = await supabaseClient
       .from("agendamentos")
       .select("*")
-      .eq("Dados", date)
+      .eq("data", date)
       .order("horario_inicial", { ascending: true });
 
     if (result.error) {
