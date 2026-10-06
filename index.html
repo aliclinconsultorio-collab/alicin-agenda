@@ -116,7 +116,7 @@ if (!patient || !professional || !room || !date || !start || !end) { alert("Pree
 const { data, error } = await supabaseClient.from("appointments").insert([{ patient, phone, professional, room, date, start, end, status, type, notes }]).select();
 if (error) { alert("Erro ao salvar: " + error.message); return; }  
 appointments.push(data[0]);  
-reder(): 
+render(): 
 alert("Agendamento salvo com sucesso!");  
 }
   function populate(){
