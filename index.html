@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agenda AliClin</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * { box-sizing: border-box; }
 
@@ -24,92 +26,100 @@
       align-items: center;
     }
 
-    h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    header p {
-      margin: 5px 0 0;
-      color: #667;
-    }
+    h1 { margin: 0; }
+    header p { margin: 4px 0 0; color: #607d8b; }
 
     button {
-      padding: 10px 16px;
       border: 0;
       border-radius: 7px;
+      padding: 10px 16px;
       cursor: pointer;
-      background: #167c80;
-      color: white;
       font-weight: bold;
+      background: #477f86;
+      color: white;
     }
 
     button.secondary {
       background: white;
-      color: #333;
-      border: 1px solid #ccc;
+      color: #37474f;
+      border: 1px solid #cfd8dc;
     }
 
+    main { padding: 20px 28px; }
+
     .toolbar {
-      padding: 18px 28px;
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
     }
 
     input, select, textarea {
-      padding: 9px;
-      border: 1px solid #bbb;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cfd8dc;
       border-radius: 6px;
-      font-size: 14px;
+      font: inherit;
+      background: white;
+    }
+
+    .toolbar input,
+    .toolbar select {
+      width: auto;
     }
 
     .grid {
-      margin: 0 28px 30px;
       background: white;
+      border: 1px solid #ddd;
       overflow-x: auto;
-      border-radius: 8px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 800px;
+      table-layout: fixed;
     }
 
     th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
+      border: 1px solid #e1e5e7;
+      padding: 9px;
       text-align: center;
+      height: 52px;
     }
 
-    th {
-      background: #fafafa;
+    th { background: #fafafa; }
+
+    th:first-child,
+    td:first-child {
+      width: 90px;
     }
 
     td.time {
-      width: 100px;
       font-weight: bold;
+      background: #fafafa;
     }
 
-    td.cell {
-      height: 52px;
-      cursor: pointer;
-    }
+    td.cell { cursor: pointer; }
 
-    td.cell:hover {
-      background: #eef8f8;
-    }
+    td.cell:hover { background: #eef7f8; }
 
     .empty {
-      color: #aaa;
+      color: #90a4ae;
+      font-size: 13px;
     }
 
     .appointment {
-      background: #dff3f2;
+      background: #d9f0f2;
       border-radius: 6px;
-      padding: 7px;
+      padding: 6px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .appointment strong {
+      display: block;
+      margin-bottom: 3px;
     }
 
     .modal-bg {
@@ -119,59 +129,57 @@
       background: rgba(0,0,0,.45);
       align-items: center;
       justify-content: center;
+      padding: 20px;
       z-index: 1000;
     }
 
     .modal {
       background: white;
-      width: min(560px, 92vw);
-      max-height: 90vh;
-      overflow-y: auto;
-      border-radius: 10px;
+      width: 100%;
+      max-width: 560px;
+      border-radius: 12px;
       padding: 22px;
+      max-height: 95vh;
+      overflow-y: auto;
     }
 
-    .modal h2 {
-      margin-top: 0;
-    }
+    .modal h2 { margin-top: 0; }
 
-    .form-grid {
+    .row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-size: 14px;
     }
 
-    .full {
-      grid-column: 1 / -1;
+    textarea {
+      min-height: 80px;
+      resize: vertical;
     }
 
     .actions {
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
+      gap: 8px;
       margin-top: 18px;
     }
 
-    @media (max-width: 650px) {
-      header {
-        align-items: flex-start;
-        gap: 12px;
-        flex-direction: column;
-      }
+    .danger { background: #b94a48; }
 
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
+    #message {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
 
-      .full {
-        grid-column: auto;
-      }
+    @media (max-width: 700px) {
+      main, header { padding: 15px; }
+      .row { grid-template-columns: 1fr; }
+      table { min-width: 720px; }
     }
   </style>
 </head>
@@ -184,60 +192,64 @@
     <p>Agenda compartilhada da clínica</p>
   </div>
 
-  <button type="button" onclick="openNew()">+ Novo agendamento</button>
+  <button onclick="openNew()">+ Novo agendamento</button>
 </header>
 
-<div class="toolbar">
-  <button type="button" class="secondary" onclick="changeDay(-1)">← Dia anterior</button>
-  <button type="button" class="secondary" onclick="goToday()">Hoje</button>
-  <button type="button" class="secondary" onclick="changeDay(1)">Dia seguinte →</button>
+<main>
+  <div id="message"></div>
 
-  <input id="datePicker" type="date" onchange="render()">
+  <div class="toolbar">
+    <button class="secondary" onclick="changeDay(-1)">← Dia anterior</button>
+    <button class="secondary" onclick="goToday()">Hoje</button>
+    <button class="secondary" onclick="changeDay(1)">Dia seguinte →</button>
 
-  <select id="filterRoom" onchange="render()">
-    <option value="">Todas as salas</option>
-    <option value="Consultório 1">Consultório 1</option>
-    <option value="Consultório 2">Consultório 2</option>
-    <option value="Consultório 3">Consultório 3</option>
-  </select>
-</div>
+    <input id="datePicker" type="date" onchange="loadAppointments()">
 
-<div class="grid">
-  <table>
-    <thead>
-      <tr>
-        <th>Horário</th>
-        <th>Consultório 1</th>
-        <th>Consultório 2</th>
-        <th>Consultório 3</th>
-      </tr>
-    </thead>
-    <tbody id="body"></tbody>
-  </table>
-</div>
+    <select id="filterRoom" onchange="render()">
+      <option value="">Todas as salas</option>
+      <option value="Consultório 1">Consultório 1</option>
+      <option value="Consultório 2">Consultório 2</option>
+      <option value="Consultório 3">Consultório 3</option>
+    </select>
+  </div>
 
-<div id="modalBg" class="modal-bg">
+  <div class="grid">
+    <table>
+      <thead>
+        <tr>
+          <th>Horário</th>
+          <th>Consultório 1</th>
+          <th>Consultório 2</th>
+          <th>Consultório 3</th>
+        </tr>
+      </thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="modal-bg" id="modalBg">
   <div class="modal">
-    <h2>Novo agendamento</h2>
+    <h2 id="modalTitle">Novo agendamento</h2>
 
-    <div class="form-grid">
-      <div class="field full">
-        <label>Paciente</label>
-        <input id="patient" type="text">
-      </div>
+    <label>Paciente *</label>
+    <input id="patient" type="text">
 
-      <div class="field">
+    <div class="row">
+      <div>
         <label>Telefone</label>
         <input id="phone" type="text">
       </div>
 
-      <div class="field">
+      <div>
         <label>Profissional</label>
         <input id="professional" type="text">
       </div>
+    </div>
 
-      <div class="field">
-        <label>Consultório</label>
+    <div class="row">
+      <div>
+        <label>Consultório *</label>
         <select id="room">
           <option value="Consultório 1">Consultório 1</option>
           <option value="Consultório 2">Consultório 2</option>
@@ -245,145 +257,301 @@
         </select>
       </div>
 
-      <div class="field">
-        <label>Data</label>
+      <div>
+        <label>Data *</label>
         <input id="appointmentDate" type="date">
-      </div>
-
-      <div class="field">
-        <label>Início</label>
-        <input id="start" type="time">
-      </div>
-
-      <div class="field">
-        <label>Fim</label>
-        <input id="end" type="time">
-      </div>
-
-      <div class="field full">
-        <label>Observações</label>
-        <textarea id="notes" rows="3"></textarea>
       </div>
     </div>
 
+    <div class="row">
+      <div>
+        <label>Início *</label>
+        <input id="start" type="time" step="1800">
+      </div>
+
+      <div>
+        <label>Fim *</label>
+        <input id="end" type="time" step="1800">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Status</label>
+        <select id="status">
+          <option value="Agendado">Agendado</option>
+          <option value="Confirmado">Confirmado</option>
+          <option value="Atendido">Atendido</option>
+          <option value="Cancelado">Cancelado</option>
+          <option value="Faltou">Faltou</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Tipo de atendimento</label>
+        <input id="type" type="text">
+      </div>
+    </div>
+
+    <label>Observações</label>
+    <textarea id="notes"></textarea>
+
     <div class="actions">
-      <button type="button" class="secondary" onclick="closeModal()">Cancelar</button>
-      <button type="button" onclick="saveAppointment()">Salvar</button>
+      <button
+        id="deleteBtn"
+        class="danger"
+        style="display:none; margin-right:auto"
+        onclick="deleteAppointment()">
+        Excluir
+      </button>
+
+      <button class="secondary" onclick="closeModal()">Cancelar</button>
+      <button onclick="saveAppointment()">Salvar</button>
     </div>
   </div>
 </div>
 
 <script>
-  const rooms = ["Consultório 1", "Consultório 2", "Consultório 3"];
+  const SUPABASE_URL = "https://hxgkiebshwmtnwrdkmhb.supabase.co";
+
+  /*
+    COLE A SUA CHAVE PÚBLICA DO SUPABASE ABAIXO.
+    Use somente a chave publishable/anon.
+  */
+  const SUPABASE_KEY = "sb_publishable_q6jVJbTlU1qS9xltrSoCpA_shgky4Cn";
+
+  const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  const rooms = [
+    "Consultório 1",
+    "Consultório 2",
+    "Consultório 3"
+  ];
+
   let appointments = [];
+  let editingId = null;
 
   function pad(number) {
     return String(number).padStart(2, "0");
   }
 
   function today() {
-    const now = new Date();
-    return now.getFullYear() + "-" +
-      pad(now.getMonth() + 1) + "-" +
-      pad(now.getDate());
+    const d = new Date();
+    return (
+      d.getFullYear() +
+      "-" +
+      pad(d.getMonth() + 1) +
+      "-" +
+      pad(d.getDate())
+    );
   }
 
   function times() {
-    const list = [];
+    const result = [];
 
     for (let hour = 8; hour <= 19; hour++) {
-      list.push(pad(hour) + ":00");
+      result.push(pad(hour) + ":00");
 
       if (hour < 19) {
-        list.push(pad(hour) + ":30");
+        result.push(pad(hour) + ":30");
       }
     }
 
-    return list;
+    return result;
+  }
+
+  function normalizeTime(value) {
+    if (!value) return "";
+    return String(value).substring(0, 5);
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value || "";
+    return div.innerHTML;
+  }
+
+  function showMessage(text, error) {
+    const el = document.getElementById("message");
+    el.textContent = text || "";
+    el.style.color = error ? "#b94a48" : "#2e7d32";
+  }
+
+  async function loadAppointments() {
+    const date = document.getElementById("datePicker").value || today();
+    document.getElementById("datePicker").value = date;
+
+    showMessage("Carregando agenda...", false);
+
+    const result = await supabaseClient
+      .from("agendamentos")
+      .select("*")
+      .eq("Dados", date)
+      .order("horario_inicial", { ascending: true });
+
+    if (result.error) {
+      appointments = [];
+      showMessage(
+        "Erro ao carregar: " + result.error.message,
+        true
+      );
+      render();
+      return;
+    }
+
+    appointments = result.data || [];
+    showMessage("", false);
+    render();
   }
 
   function render() {
-    const selectedDate = document.getElementById("datePicker").value || today();
-    const roomFilter = document.getElementById("filterRoom").value;
     const body = document.getElementById("body");
+    const selectedRoom = document.getElementById("filterRoom").value;
 
-    document.getElementById("datePicker").value = selectedDate;
     body.innerHTML = "";
 
     times().forEach(function(time) {
-      const row = document.createElement("tr");
+      const tr = document.createElement("tr");
 
       const timeCell = document.createElement("td");
       timeCell.className = "time";
       timeCell.textContent = time;
-      row.appendChild(timeCell);
+      tr.appendChild(timeCell);
 
       rooms.forEach(function(room) {
         const cell = document.createElement("td");
         cell.className = "cell";
 
-        if (roomFilter && roomFilter !== room) {
+        if (selectedRoom && selectedRoom !== room) {
           cell.style.opacity = "0.25";
-        } else {
-          const appointment = appointments.find(function(item) {
-            return item.date === selectedDate &&
-              item.room === room &&
-              item.start === time;
-          });
-
-          if (appointment) {
-            cell.innerHTML =
-              '<div class="appointment"><strong>' +
-              escapeHtml(appointment.patient) +
-              "</strong><br>" +
-              escapeHtml(appointment.professional) +
-              "</div>";
-          } else {
-            cell.innerHTML = '<div class="empty">Livre</div>';
-
-            cell.onclick = function() {
-              openNew(selectedDate, room, time);
-            };
-          }
+          tr.appendChild(cell);
+          return;
         }
 
-        row.appendChild(cell);
+        const appointment = appointments.find(function(item) {
+          const start = normalizeTime(item.horario_inicial);
+          const end = normalizeTime(item.horario_final);
+
+          return (
+            item.sala === room &&
+            start <= time &&
+            end > time &&
+            item.status !== "Cancelado"
+          );
+        });
+
+        if (appointment) {
+          cell.innerHTML =
+            '<div class="appointment">' +
+            "<strong>" +
+            escapeHtml(appointment.paciente) +
+            "</strong>" +
+            escapeHtml(appointment.profissional || "") +
+            "<br>" +
+            normalizeTime(appointment.horario_inicial) +
+            " - " +
+            normalizeTime(appointment.horario_final) +
+            "</div>";
+
+          cell.onclick = function() {
+            openExisting(appointment);
+          };
+        } else {
+          cell.innerHTML = '<div class="empty">Livre</div>';
+
+          cell.onclick = function() {
+            openNew(
+              document.getElementById("datePicker").value,
+              room,
+              time
+            );
+          };
+        }
+
+        tr.appendChild(cell);
       });
 
-      body.appendChild(row);
+      body.appendChild(tr);
     });
   }
 
-  function openNew(date, room, startTime) {
+  function clearForm() {
     document.getElementById("patient").value = "";
     document.getElementById("phone").value = "";
     document.getElementById("professional").value = "";
+    document.getElementById("room").value = "Consultório 1";
+    document.getElementById("appointmentDate").value = today();
+    document.getElementById("start").value = "";
+    document.getElementById("end").value = "";
+    document.getElementById("status").value = "Agendado";
+    document.getElementById("type").value = "";
     document.getElementById("notes").value = "";
+  }
+
+  function openNew(date, room, start) {
+    editingId = null;
+    clearForm();
+
+    document.getElementById("modalTitle").textContent =
+      "Novo agendamento";
+
+    document.getElementById("deleteBtn").style.display = "none";
 
     document.getElementById("appointmentDate").value =
       date || document.getElementById("datePicker").value || today();
 
-    document.getElementById("room").value = room || "Consultório 1";
+    if (room) {
+      document.getElementById("room").value = room;
+    }
 
-    if (startTime) {
-      document.getElementById("start").value = startTime;
+    if (start) {
+      document.getElementById("start").value = start;
 
-      const parts = startTime.split(":");
+      const parts = start.split(":");
       let hour = Number(parts[0]);
       let minute = Number(parts[1]) + 30;
 
       if (minute >= 60) {
-        hour = hour + 1;
-        minute = minute - 60;
+        hour += 1;
+        minute -= 60;
       }
 
       document.getElementById("end").value =
         pad(hour) + ":" + pad(minute);
-    } else {
-      document.getElementById("start").value = "";
-      document.getElementById("end").value = "";
     }
 
+    document.getElementById("modalBg").style.display = "flex";
+  }
+
+  function openExisting(item) {
+    editingId = item.id;
+
+    document.getElementById("modalTitle").textContent =
+      "Editar agendamento";
+
+    document.getElementById("patient").value = item.paciente || "";
+    document.getElementById("phone").value = item.telefone || "";
+    document.getElementById("professional").value =
+      item.profissional || "";
+    document.getElementById("room").value =
+      item.sala || "Consultório 1";
+    document.getElementById("appointmentDate").value =
+      item.Dados || "";
+    document.getElementById("start").value =
+      normalizeTime(item.horario_inicial);
+    document.getElementById("end").value =
+      normalizeTime(item.horario_final);
+    document.getElementById("status").value =
+      item.status || "Agendado";
+    document.getElementById("type").value =
+      item.tipo_atendimento || "";
+    document.getElementById("notes").value =
+      item.observacao || "";
+
+    document.getElementById("deleteBtn").style.display = "block";
     document.getElementById("modalBg").style.display = "flex";
   }
 
@@ -392,63 +560,127 @@
   }
 
   async function saveAppointment() {
-  const patient = document.getElementById("patient").value.trim();
-  const phone = document.getElementById("phone").value.trim();
-  const professional = document.getElementById("professional").value.trim();
-  const room = document.getElementById("room").value;
-  const date = document.getElementById("appointmentDate").value;
-  const start = document.getElementById("start").value;
-  const end = document.getElementById("end").value;
-  const notes = document.getElementById("notes").value.trim();
+    const patient =
+      document.getElementById("patient").value.trim();
+    const phone =
+      document.getElementById("phone").value.trim();
+    const professional =
+      document.getElementById("professional").value.trim();
+    const room =
+      document.getElementById("room").value;
+    const date =
+      document.getElementById("appointmentDate").value;
+    const start =
+      document.getElementById("start").value;
+    const end =
+      document.getElementById("end").value;
+    const status =
+      document.getElementById("status").value;
+    const type =
+      document.getElementById("type").value.trim();
+    const notes =
+      document.getElementById("notes").value.trim();
 
-  if (!patient || !date || !start || !end) {
-    alert("Preencha paciente, data, horário inicial e horário final.");
-    return;
-  }
+    if (!patient || !room || !date || !start || !end) {
+      alert(
+        "Preencha paciente, consultório, data, horário inicial e horário final."
+      );
+      return;
+    }
 
-  const { data, error } = await supabaseClient
-    .from("agendamentos")
-    .insert([{
+    if (end <= start) {
+      alert("O horário final deve ser depois do horário inicial.");
+      return;
+    }
+
+    const conflict = appointments.some(function(item) {
+      if (editingId && String(item.id) === String(editingId)) {
+        return false;
+      }
+
+      return (
+        item.sala === room &&
+        item.status !== "Cancelado" &&
+        normalizeTime(item.horario_inicial) < end &&
+        normalizeTime(item.horario_final) > start
+      );
+    });
+
+    if (conflict) {
+      alert("Já existe um agendamento nesse consultório nesse horário.");
+      return;
+    }
+
+    const payload = {
       paciente: patient,
       telefone: phone,
       profissional: professional,
       sala: room,
-      dados: date,
+      Dados: date,
       horario_inicial: start,
       horario_final: end,
+      status: status,
+      tipo_atendimento: type,
       observacao: notes
-    }])
-    .select();
+    };
 
-  if (error) {
-    alert("Erro ao salvar: " + error.message);
-    return;
-  }
+    let result;
 
-  appointments.push({
-    patient: patient,
-    phone: phone,
-    professional: professional,
-    room: room,
-    date: date,
-    start: start,
-    end: end,
-    notes: notes
-  });
+    if (editingId) {
+      result = await supabaseClient
+        .from("agendamentos")
+        .update(payload)
+        .eq("id", editingId)
+        .select();
+    } else {
+      result = await supabaseClient
+        .from("agendamentos")
+        .insert([payload])
+        .select();
+    }
 
-  document.getElementById("datePicker").value = date;
-  closeModal();
-  render();
-  alert("Agendamento salvo com sucesso!");
-}
+    if (result.error) {
+      alert("Erro ao salvar: " + result.error.message);
+      return;
+    }
+
+    document.getElementById("datePicker").value = date;
+
+    closeModal();
+    await loadAppointments();
 
     alert("Agendamento salvo com sucesso!");
   }
 
+  async function deleteAppointment() {
+    if (!editingId) return;
+
+    const confirmed = confirm(
+      "Deseja realmente excluir este agendamento?"
+    );
+
+    if (!confirmed) return;
+
+    const result = await supabaseClient
+      .from("agendamentos")
+      .delete()
+      .eq("id", editingId);
+
+    if (result.error) {
+      alert("Erro ao excluir: " + result.error.message);
+      return;
+    }
+
+    editingId = null;
+    closeModal();
+    await loadAppointments();
+  }
+
   function changeDay(amount) {
     const input = document.getElementById("datePicker");
-    const parts = (input.value || today()).split("-");
+    const value = input.value || today();
 
+    const parts = value.split("-");
     const date = new Date(
       Number(parts[0]),
       Number(parts[1]) - 1,
@@ -458,26 +690,32 @@
     date.setDate(date.getDate() + amount);
 
     input.value =
-      date.getFullYear() + "-" +
-      pad(date.getMonth() + 1) + "-" +
+      date.getFullYear() +
+      "-" +
+      pad(date.getMonth() + 1) +
+      "-" +
       pad(date.getDate());
 
-    render();
+    loadAppointments();
   }
 
   function goToday() {
     document.getElementById("datePicker").value = today();
-    render();
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text || "";
-    return div.innerHTML;
+    loadAppointments();
   }
 
   document.getElementById("datePicker").value = today();
+
   render();
+
+  if (SUPABASE_KEY !== "COLE_AQUI_SUA_CHAVE_PUBLICA") {
+    loadAppointments();
+  } else {
+    showMessage(
+      "Falta configurar a chave pública do Supabase.",
+      true
+    );
+  }
 </script>
 
 </body>
